@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏆 HistoQuiz — Pantalla Profesor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080F;--bg2:#0E0F1E;--bg3:#141526;
+  --red:#E03148;--gold:#F5A623;--teal:#00C9B1;
+  --violet:#8B5CF6;--mint:#10D98A;--blue:#3B82F6;
+  --white:#FFFFFF;--off:#D1D5E8;--muted:#6B7194;--line:#1E2035;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',sans-serif;color:var(--white)}
+canvas#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* LAYOUT */
+.layout{position:relative;z-index:1;display:grid;grid-template-rows:auto 1fr auto;height:100vh;padding:20px 28px}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.header-left{display:flex;align-items:center;gap:16px}
+.logo{font-family:'Bebas Neue';font-size:42px;line-height:1;letter-spacing:2px}
+.logo .r{color:var(--red)}
+.header-badge{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:5px 14px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.8px}
+.conn-indicator{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--muted)}
+.conn-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);transition:background .4s}
+.conn-dot.live{background:var(--mint);box-shadow:0 0 8px var(--mint)}
+.conn-dot.err{background:var(--red)}
+.player-count{font-family:'Bebas Neue';font-size:28px;color:var(--teal)}
+.header-right{display:flex;align-items:center;gap:16px}
+.clear-btn{background:transparent;border:1px solid var(--line);color:var(--muted);font-family:'Inter';font-size:11px;font-weight:700;padding:6px 14px;border-radius:7px;cursor:pointer;letter-spacing:.5px}
+.clear-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* MAIN GRID */
+.main{display:grid;grid-template-columns:1fr 380px;gap:20px;min-height:0}
+
+/* LEADERBOARD */
+.lb-panel{display:flex;flex-direction:column;min-height:0}
+.lb-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1.8px;margin-bottom:12px;text-transform:uppercase}
+.lb-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+.lb-list::-webkit-scrollbar{width:3px}
+.lb-list::-webkit-scrollbar-track{background:transparent}
+.lb-list::-webkit-scrollbar-thumb{background:var(--line)}
+
+.lb-row{
+  display:flex;align-items:center;gap:12px;
+  background:var(--bg2);border:1px solid var(--line);
+  border-radius:12px;padding:12px 16px;
+  transition:all .4s cubic-bezier(.4,0,.2,1);
+  animation:slideIn .4s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+.lb-row.first{border-color:var(--gold);background:#121005}
+.lb-row.second{border-color:#C0C0C0;background:#0D0D0D}
+.lb-row.third{border-color:#CD7F32;background:#0D0A06}
+.lb-row.new-entry{animation:newEntry .6s ease}
+@keyframes newEntry{0%{background:rgba(0,201,177,.15)}100%{background:var(--bg2)}}
+
+.rank-badge{
+  font-family:'Bebas Neue';font-size:26px;min-width:36px;text-align:center;
+}
+.rank-badge.r1{color:var(--gold);text-shadow:0 0 12px rgba(245,166,35,.4)}
+.rank-badge.r2{color:#C0C0C0}
+.rank-badge.r3{color:#CD7F32}
+.rank-badge.rx{color:var(--muted)}
+
+.player-info{flex:1;min-width:0}
+.player-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-meta{font-size:11px;color:var(--muted);margin-top:2px}
+
+.score-col{text-align:right}
+.score-num{font-family:'Bebas Neue';font-size:30px;line-height:1;color:var(--teal)}
+.score-num.r1{color:var(--gold)}
+.score-bar-wrap{width:80px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:4px;margin-left:auto}
+.score-bar{height:100%;background:var(--teal);border-radius:2px;transition:width .8s ease}
+.score-bar.r1{background:var(--gold)}
+
+/* RIGHT PANEL */
+.right-panel{display:flex;flex-direction:column;gap:14px}
+
+/* STATS CARDS */
+.stat-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.stat-card h4{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.stat-big{font-family:'Bebas Neue';font-size:52px;line-height:1;color:var(--teal)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* WINNER SPOTLIGHT */
+.winner-card{
+  background:linear-gradient(135deg,#121005,#0D0A00);
+  border:1.5px solid var(--gold);border-radius:14px;
+  padding:18px;text-align:center;
+  transition:all .5s;
+}
+.winner-card .wlabel{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:2px;margin-bottom:4px}
+.winner-card .wcrown{font-size:40px;line-height:1.2}
+.winner-card .wname{font-family:'Bebas Neue';font-size:clamp(22px,3vw,36px);color:var(--gold);line-height:1.1;word-break:break-word;margin:4px 0}
+.winner-card .wpts{font-size:20px;color:var(--teal);font-weight:700}
+.winner-card .wstats{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* ACTIVITY FEED */
+.activity-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;flex:1;min-height:0;display:flex;flex-direction:column}
+.activity-card h4{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.feed{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.feed::-webkit-scrollbar{width:2px}
+.feed::-webkit-scrollbar-thumb{background:var(--line)}
+.feed-item{font-size:12px;color:var(--off);padding:5px 0;border-bottom:1px solid var(--line);animation:feedIn .3s ease}
+@keyframes feedIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.feed-item .ftime{color:var(--muted);font-size:10px}
+
+/* FOOTER */
+.footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.footer-left{font-size:11px;color:var(--muted)}
+.footer-right{display:flex;gap:10px}
+.last-update{font-size:11px;color:var(--muted)}
+.pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mint);animation:pulse 1.5s ease infinite;margin-right:5px}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* CONFETTI */
+.piece{position:fixed;pointer-events:none;border-radius:2px;animation:cffall linear forwards;top:-12px}
+@keyframes cffall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty .eicon{font-size:48px;margin-bottom:12px}
+.empty p{font-size:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<div class="layout">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">HISTO<span class="r">QUIZ</span></div>
+      <div class="header-badge">PANTALLA PROFESOR</div>
+      <div class="conn-indicator">
+        <div class="conn-dot" id="conn-dot"></div>
+        <span id="conn-label">Conectando...</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div style="font-size:13px;color:var(--muted)">Jugadores: <span class="player-count" id="player-count">0</span></div>
+      <button class="clear-btn" onclick="clearScores()">🗑 Limpiar</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- LEADERBOARD -->
+    <div class="lb-panel">
+      <div class="lb-title"><span class="pulse"></span>Ranking en vivo — actualización automática</div>
+      <div class="lb-list" id="lb-list">
+        <div class="empty">
+          <div class="eicon">📡</div>
+          <p>Esperando jugadores...<br>Comparte el link con tus estudiantes.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+      <!-- WINNER -->
+      <div class="winner-card" id="winner-card">
+        <div class="wlabel">LÍDER ACTUAL</div>
+        <div class="wcrown">👑</div>
+        <div class="wname" id="winner-name">—</div>
+        <div class="wpts" id="winner-pts">0 pts</div>
+        <div class="wstats" id="winner-stats"></div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stat-card">
+        <h4>Total jugadores</h4>
+        <div class="stat-big" id="stat-players">0</div>
+        <div class="stat-sub">han enviado su resultado</div>
+      </div>
+
+      <!-- ACTIVITY FEED -->
+      <div class="activity-card">
+        <h4>Actividad reciente</h4>
+        <div class="feed" id="feed"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">🔥 Los puntajes se actualizan en tiempo real conforme los estudiantes terminan</div>
+    <div class="last-update">Último update: <span id="last-update">—</span></div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ════════════════════════════════════════════════════════
+// 🔧 CONFIGURACIÓN FIREBASE — MISMOS VALORES QUE EL QUIZ
+// ════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBDmCKPBXuN5_FycB2_U1KrTqNXZcZwYzY",
+  authDomain: "histoquiz-d6caf.firebaseapp.com",
+  databaseURL: "https://histoquiz-d6caf-default-rtdb.firebaseio.com",
+  projectId: "histoquiz-d6caf",
+  storageBucket: "histoquiz-d6caf.firebasestorage.app",
+  messagingSenderId: "275731334429",
+  appId: "1:275731334429:web:54361870a86f89a6168df4"
+};
+// ════════════════════════════════════════════════════════
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// Connection status
+onValue(ref(db, '.info/connected'), snap => {
+  const ok = snap.val() === true;
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-label');
+  dot.className = 'conn-dot ' + (ok ? 'live' : 'err');
+  lbl.textContent = ok ? 'EN VIVO' : 'Sin conexión';
+});
+
+// Clear scores
+window.clearScores = async function() {
+  if(!confirm('¿Seguro que quieres limpiar todos los puntajes?')) return;
+  await remove(ref(db, 'histoquiz/scores'));
+};
+
+// Live listener
+let prevKeys = new Set();
+onValue(ref(db, 'histoquiz/scores'), snap => {
+  const data = snap.val() || {};
+  const entries = Object.values(data).sort((a,b)=>b.score-a.score);
+  renderLeaderboard(entries);
+
+  // Detect new entries for feed
+  const curKeys = new Set(Object.keys(data));
+  curKeys.forEach(k => {
+    if(!prevKeys.has(k)) {
+      const e = data[k];
+      addFeed(`🎮 ${e.name} — ${e.score} pts (${e.correct}/8 correctas)`);
+    }
+  });
+  prevKeys = curKeys;
+  document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+});
+
+function renderLeaderboard(entries) {
+  const list = document.getElementById('lb-list');
+  const count = entries.length;
+  document.getElementById('player-count').textContent = count;
+  document.getElementById('stat-players').textContent = count;
+
+  if(count === 0) {
+    list.innerHTML = `<div class="empty"><div class="eicon">📡</div><p>Esperando jugadores...<br>Comparte el link con tus estudiantes.</p></div>`;
+    document.getElementById('winner-name').textContent = '—';
+    document.getElementById('winner-pts').textContent = '0 pts';
+    document.getElementById('winner-stats').textContent = '';
+    return;
+  }
+
+  // Winner spotlight
+  const top = entries[0];
+  document.getElementById('winner-name').textContent = top.name;
+  document.getElementById('winner-pts').textContent = top.score + ' pts';
+  document.getElementById('winner-stats').textContent = `${top.correct}/8 correctas · racha máx: ${top.streak||0}`;
+  if(count >= 1 && top.score > 0) confettiSmall();
+
+  const maxScore = entries[0].score || 1;
+  const medals = ['🥇','🥈','🥉'];
+  const rankClass = ['first','second','third'];
+
+  list.innerHTML = entries.map((e, i) => {
+    const rc = i < 3 ? rankClass[i] : '';
+    const rb = i < 3 ? `r${i+1}` : 'rx';
+    const medal = i < 3 ? medals[i] : (i+1);
+    const barPct = Math.round(e.score/maxScore*100);
+    const pct = Math.round(e.correct/8*100);
+    return `<div class="lb-row ${rc}">
+      <div class="rank-badge ${rb}">${medal}</div>
+      <div class="player-info">
+        <div class="player-name">${e.name}</div>
+        <div class="player-meta">${e.correct}/8 ✓ · ${pct}% precisión${e.streak>2?' · 🔥 racha ×'+e.streak:''}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-num ${i===0?'r1':''}">${e.score}</div>
+        <div class="score-bar-wrap"><div class="score-bar ${i===0?'r1':''}" style="width:${barPct}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let confettiLock = false;
+function confettiSmall(){
+  if(confettiLock) return;
+  confettiLock = true;
+  setTimeout(()=>confettiLock=false, 8000);
+  const colors=['#E03148','#F5A623','#00C9B1','#8B5CF6','#10D98A'];
+  for(let i=0;i<30;i++){
+    const p=document.createElement('div');p.className='piece';
+    const c=colors[~~(Math.random()*colors.length)];const dur=2+Math.random()*1.5;
+    p.style.cssText=`left:${Math.random()*100}%;width:${5+Math.random()*6}px;height:${5+Math.random()*6}px;background:${c};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${dur}s;animation-delay:${Math.random()*.5}s`;
+    document.body.appendChild(p);setTimeout(()=>p.remove(),(dur+1.5)*1000);
+  }
+}
+</script>
+
+<script>
+// PARTICLES
+const cvs=document.getElementById('particles');
+const pctx=cvs.getContext('2d');
+let parts=[];
+function resizeCvs(){cvs.width=innerWidth;cvs.height=innerHeight}
+function initParts(){
+  parts=Array.from({length:50},()=>({
+    x:Math.random()*cvs.width,y:Math.random()*cvs.height,
+    vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,
+    r:Math.random()*1.3+.5,
+    c:['#E03148','#F5A623','#00C9B1','#8B5CF6','#10D98A'][~~(Math.random()*5)]
+  }));
+}
+function animParts(){
+  pctx.clearRect(0,0,cvs.width,cvs.height);
+  parts.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>cvs.width)p.vx*=-1;
+    if(p.y<0||p.y>cvs.height)p.vy*=-1;
+    pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    pctx.fillStyle=p.c+'44';pctx.fill();
+  });
+  parts.forEach((a,i)=>parts.slice(i+1).forEach(b=>{
+    const d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(d<110){pctx.beginPath();pctx.moveTo(a.x,a.y);pctx.lineTo(b.x,b.y);
+      pctx.strokeStyle=`rgba(30,32,53,${1-d/110})`;pctx.lineWidth=.5;pctx.stroke();}
+  }));
+  requestAnimationFrame(animParts);
+}
+resizeCvs();initParts();animParts();
+window.addEventListener('resize',()=>{resizeCvs();initParts();});
+
+// ACTIVITY FEED
+function addFeed(msg){
+  const feed=document.getElementById('feed');
+  const t=new Date().toLocaleTimeString();
+  const item=document.createElement('div');item.className='feed-item';
+  item.innerHTML=`${msg} <span class="ftime">${t}</span>`;
+  feed.insertBefore(item,feed.firstChild);
+  while(feed.children.length>12)feed.removeChild(feed.lastChild);
+}
+window.addFeed=addFeed;
+</script>
+</body>
+</html>
