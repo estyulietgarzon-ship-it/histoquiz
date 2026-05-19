@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>⚡ HistoQuiz — Capacitación</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+:root{
+  --bg:#07080F;--bg2:#0E0F1E;--bg3:#141526;
+  --red:#E03148;--gold:#F5A623;--teal:#00C9B1;
+  --violet:#8B5CF6;--mint:#10D98A;--blue:#3B82F6;
+  --white:#FFFFFF;--off:#D1D5E8;--muted:#6B7194;--line:#1E2035;
+}
+
+html,body{width:100%;min-height:100vh;background:var(--bg);font-family:'Inter',sans-serif;color:var(--white);overflow-x:hidden}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;text-align:center}
+.screen.active{display:flex}
+
+/* ── PARTICLES ── */
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+.screen>*{position:relative;z-index:1}
+
+/* ══ LOBBY ══ */
+.lobby-bars{display:flex;align-items:flex-end;gap:6px;height:70px;margin-bottom:20px;justify-content:center}
+.lb{border-radius:4px 4px 0 0;animation:barUp .5s ease both}
+@keyframes barUp{from{transform:scaleY(0);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}
+.big-title{font-family:'Bebas Neue';font-size:clamp(52px,14vw,96px);line-height:.9;letter-spacing:2px}
+.big-title .r{color:var(--red)}
+.lobby-sub{font-size:clamp(13px,3.5vw,16px);color:var(--muted);margin:12px 0 28px;line-height:1.6;max-width:340px}
+
+/* ── NAME INPUT ── */
+.name-card{background:var(--bg2);border:1.5px solid var(--line);border-radius:16px;padding:28px 24px;width:100%;max-width:380px;margin-bottom:20px}
+.name-card h3{font-size:13px;font-weight:700;color:var(--teal);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.name-input{
+  width:100%;background:var(--bg3);border:1.5px solid var(--line);
+  border-radius:10px;padding:14px 16px;font-size:18px;font-weight:700;
+  color:var(--white);font-family:'Inter',sans-serif;text-align:center;
+  outline:none;transition:border-color .2s;
+}
+.name-input:focus{border-color:var(--teal)}
+.name-input::placeholder{color:var(--muted);font-weight:400}
+
+.start-btn{
+  width:100%;max-width:380px;background:var(--red);color:var(--white);
+  font-family:'Bebas Neue';font-size:26px;letter-spacing:2px;
+  border:none;border-radius:12px;padding:16px;cursor:pointer;
+  transition:transform .15s,filter .15s,opacity .2s;
+  box-shadow:0 0 30px rgba(224,49,72,.35);
+}
+.start-btn:active{transform:scale(.97)}
+.start-btn:disabled{opacity:.4;cursor:default}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.chip{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.6px}
+
+/* ══ QUESTION ══ */
+#s-question{padding:16px 16px 24px;justify-content:flex-start;padding-top:60px}
+
+/* progress + timer top bar */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 16px;display:none;align-items:center;gap:12px}
+.top-bar.show{display:flex}
+.progress-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold));border-radius:3px;transition:width .5s}
+.timer-badge{
+  background:var(--bg3);border:1.5px solid var(--line);
+  border-radius:8px;padding:4px 12px;font-family:'Bebas Neue';
+  font-size:22px;min-width:52px;text-align:center;transition:color .2s;
+}
+.timer-badge.danger{color:var(--red);border-color:var(--red)}
+.score-top{font-size:12px;font-weight:700;color:var(--gold);white-space:nowrap}
+
+.q-eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:14px;justify-content:center}
+.q-num{font-family:'Bebas Neue';font-size:44px;color:var(--red);line-height:1}
+.q-of{font-size:11px;color:var(--muted);font-weight:700}
+.q-badge{background:var(--bg3);border:1px solid var(--teal);color:var(--teal);font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:1px}
+
+.q-text{font-size:clamp(16px,4vw,22px);font-weight:700;line-height:1.45;margin-bottom:18px;max-width:560px;text-align:left}
+
+/* mini histogram */
+.hist-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:14px 14px 8px;margin-bottom:16px;width:100%;max-width:560px}
+.hbars{display:flex;align-items:flex-end;gap:3px;height:90px;margin-bottom:5px}
+.hb{border-radius:3px 3px 0 0;position:relative;flex:1;min-width:0}
+.hb span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;white-space:nowrap}
+.hlabels{display:flex;gap:3px}
+.hlabels span{flex:1;text-align:center;font-size:8px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* options */
+.opts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:560px}
+.opt{
+  background:var(--bg2);border:1.5px solid var(--line);
+  border-radius:12px;padding:14px 16px;cursor:pointer;
+  display:flex;align-items:center;gap:12px;
+  font-size:clamp(13px,3.5vw,15px);font-weight:600;color:var(--off);
+  transition:border-color .2s,background .2s,transform .1s;text-align:left;
+  width:100%;
+}
+.opt:active:not([disabled]){transform:scale(.98)}
+.opt-letter{
+  width:30px;height:30px;border-radius:7px;flex-shrink:0;
+  background:var(--bg3);border:1px solid var(--line);
+  font-family:'Bebas Neue';font-size:17px;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);
+}
+.opt.correct{border-color:var(--mint);background:#081A10}
+.opt.correct .opt-letter{background:var(--mint);color:var(--bg);border-color:var(--mint)}
+.opt.wrong{border-color:var(--red);background:#180608}
+.opt.wrong .opt-letter{background:var(--red);color:var(--white);border-color:var(--red)}
+
+.feedback{margin-top:12px;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.55;display:none;text-align:left;max-width:560px;width:100%}
+.feedback.show{display:block}
+.feedback.ok{background:#081A10;border:1px solid var(--mint);color:var(--mint)}
+.feedback.bad{background:#180608;border:1px solid var(--red);color:#FF8A9A}
+
+.next-btn{
+  margin-top:16px;width:100%;max-width:560px;
+  background:var(--gold);color:var(--bg);
+  font-family:'Bebas Neue';font-size:22px;letter-spacing:1.5px;
+  border:none;border-radius:10px;padding:14px;cursor:pointer;
+  display:none;
+}
+.next-btn.show{display:block}
+.next-btn:active{filter:brightness(.95)}
+
+/* ══ RESULT ══ */
+#s-result{padding:28px 20px}
+.result-name{font-size:14px;color:var(--muted);font-weight:700;letter-spacing:1px;margin-bottom:4px}
+.result-score{font-family:'Bebas Neue';font-size:clamp(72px,20vw,120px);color:var(--gold);line-height:1}
+.result-max{font-size:14px;color:var(--muted);margin-bottom:8px}
+.result-verdict{font-size:clamp(16px,4vw,22px);font-weight:700;margin-bottom:22px}
+.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:400px;margin-bottom:24px}
+.rstat{background:var(--bg2);border-radius:10px;padding:14px 8px;border:1px solid var(--line)}
+.rstat .rn{font-family:'Bebas Neue';font-size:36px;line-height:1}
+.rstat .rl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.6px;margin-top:3px}
+.lb-section{width:100%;max-width:460px}
+.lb-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-align:left;margin-bottom:10px}
+.lb-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg2);border:1px solid var(--line);
+  border-radius:10px;padding:10px 14px;margin-bottom:8px;
+}
+.lb-row.me{border-color:var(--gold)}
+.lb-rank{font-family:'Bebas Neue';font-size:22px;color:var(--muted);min-width:28px}
+.lb-rank.gold-r{color:var(--gold)}
+.lb-rank.silver-r{color:#C0C0C0}
+.lb-rank.bronze-r{color:#CD7F32}
+.lb-name{flex:1;font-size:14px;font-weight:700;text-align:left}
+.lb-pts{font-family:'Bebas Neue';font-size:20px;color:var(--teal)}
+.lb-bar-wrap{width:60px;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.lb-bar{height:100%;background:var(--teal);border-radius:3px;transition:width 1s ease}
+.replay-btn{
+  width:100%;max-width:400px;background:var(--red);color:var(--white);
+  font-family:'Bebas Neue';font-size:22px;letter-spacing:1.5px;
+  border:none;border-radius:12px;padding:14px;cursor:pointer;margin-top:10px;
+}
+.replay-btn:active{filter:brightness(.9)}
+
+/* ══ WINNER OVERLAY ══ */
+#winner-screen{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(7,8,15,.97);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+}
+#winner-screen.show{display:flex}
+.crown{font-size:72px;animation:bounce 1s ease infinite alternate}
+@keyframes bounce{from{transform:scale(1)}to{transform:scale(1.15)}}
+.winner-label{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:2px;margin:16px 0 6px}
+.winner-name{font-family:'Bebas Neue';font-size:clamp(48px,12vw,88px);color:var(--gold);line-height:1;margin-bottom:6px;word-break:break-word}
+.winner-pts{font-size:clamp(18px,5vw,28px);color:var(--teal);margin-bottom:28px;font-weight:700}
+.winner-close{
+  background:var(--bg2);border:1.5px solid var(--line);color:var(--muted);
+  font-family:'Inter';font-size:13px;font-weight:700;
+  border-radius:8px;padding:10px 24px;cursor:pointer;
+}
+
+/* ── STREAK POPUP ── */
+#streak-pop{
+  position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) scale(0);
+  font-family:'Bebas Neue';font-size:clamp(48px,12vw,80px);
+  color:var(--gold);text-shadow:0 0 30px rgba(245,166,35,.5);
+  pointer-events:none;z-index:300;opacity:0;
+  transition:transform .2s cubic-bezier(.4,0,.2,1),opacity .3s;
+}
+#streak-pop.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+
+/* ── POINTS POPUP ── */
+.pts-pop{
+  position:fixed;font-family:'Bebas Neue';font-size:32px;color:var(--mint);
+  pointer-events:none;z-index:299;animation:ptsFly 1.1s ease forwards;
+}
+@keyframes ptsFly{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(1.2)}}
+
+/* ── CONFETTI ── */
+.piece{position:fixed;pointer-events:none;border-radius:2px;animation:cffall linear forwards;top:-12px}
+@keyframes cffall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div id="streak-pop">🔥 RACHA!</div>
+
+<!-- TOP BAR (visible during quiz) -->
+<div class="top-bar" id="top-bar">
+  <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="timer-badge" id="timer-num">20</div>
+  <div class="score-top">⚡ <span id="score-top-val">0</span></div>
+</div>
+
+<!-- ════ LOBBY ════ -->
+<div class="screen active" id="s-lobby">
+  <div class="lobby-bars" id="lobby-bars"></div>
+  <div class="big-title">HISTO-<br><span class="r">QUIZ</span></div>
+  <div class="lobby-sub">Ingresa tu nombre y compite con tus compañeros. ¡El más rápido y preciso gana!</div>
+
+  <div class="name-card">
+    <h3>🎓 ¿Cómo te llamas?</h3>
+    <input class="name-input" id="name-input" type="text" maxlength="22" placeholder="Tu nombre aquí..." autocomplete="off" oninput="checkName()" onkeydown="if(event.key==='Enter')tryStart()"/>
+  </div>
+
+  <button class="start-btn" id="start-btn" onclick="startGame()" disabled>▶ COMENZAR</button>
+
+  <div class="chips">
+    <div class="chip">8 PREGUNTAS</div>
+    <div class="chip">⏱ 20 SEG</div>
+    <div class="chip">🔥 BONUS RACHA</div>
+    <div class="chip">🏆 TABLA DE LÍDERES</div>
+  </div>
+</div>
+
+<!-- ════ QUESTION ════ -->
+<div class="screen" id="s-question"></div>
+
+<!-- ════ RESULT ════ -->
+<div class="screen" id="s-result"></div>
+
+<!-- ════ WINNER OVERLAY ════ -->
+<div id="winner-screen">
+  <div class="crown">👑</div>
+  <div class="winner-label">GANADOR DE LA SESIÓN</div>
+  <div class="winner-name" id="winner-name">—</div>
+  <div class="winner-pts" id="winner-pts">0 puntos</div>
+  <button class="winner-close" onclick="document.getElementById('winner-screen').classList.remove('show')">✕ Cerrar</button>
+</div>
+
+<script>
+// ── PARTICLES ─────────────────────────────────────────────────────────────
+const cvs=document.getElementById('particles');
+const pctx=cvs.getContext('2d');
+let parts=[];
+function resizeCvs(){cvs.width=innerWidth;cvs.height=innerHeight}
+function initParts(){
+  parts=Array.from({length:40},()=>({
+    x:Math.random()*cvs.width,y:Math.random()*cvs.height,
+    vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+    r:Math.random()*1.2+.4,
+    c:['#E03148','#F5A623','#00C9B1','#8B5CF6','#10D98A'][~~(Math.random()*5)]
+  }));
+}
+function animParts(){
+  pctx.clearRect(0,0,cvs.width,cvs.height);
+  parts.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>cvs.width)p.vx*=-1;
+    if(p.y<0||p.y>cvs.height)p.vy*=-1;
+    pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    pctx.fillStyle=p.c+'55';pctx.fill();
+  });
+  parts.forEach((a,i)=>parts.slice(i+1).forEach(b=>{
+    const d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(d<100){pctx.beginPath();pctx.moveTo(a.x,a.y);pctx.lineTo(b.x,b.y);
+      pctx.strokeStyle=`rgba(30,32,53,${1-d/100})`;pctx.lineWidth=.5;pctx.stroke();}
+  }));
+  requestAnimationFrame(animParts);
+}
+resizeCvs();initParts();animParts();
+window.addEventListener('resize',()=>{resizeCvs();initParts();});
+
+// ── LOBBY BARS ─────────────────────────────────────────────────────────────
+(()=>{
+  const w=document.getElementById('lobby-bars');
+  [30,50,70,100,80,60,40,55,35].forEach((h,i)=>{
+    const cs=['#E03148','#F5A623','#00C9B1','#8B5CF6','#10D98A','#3B82F6','#F5A623','#E03148','#00C9B1'];
+    const b=document.createElement('div');b.className='lb';
+    b.style.cssText=`height:${h}px;width:22px;background:${cs[i]}55;border:1px solid ${cs[i]};animation-delay:${i*.05}s`;
+    w.appendChild(b);
+  });
+})();
+
+// ── NAME INPUT ─────────────────────────────────────────────────────────────
+function checkName(){
+  const v=document.getElementById('name-input').value.trim();
+  document.getElementById('start-btn').disabled=v.length<2;
+}
+function tryStart(){
+  if(document.getElementById('name-input').value.trim().length>=2) startGame();
+}
+
+// ── LEADERBOARD STORAGE ────────────────────────────────────────────────────
+const LB_KEY='histoquiz_lb_v2';
+function getLeaderboard(){
+  try{return JSON.parse(localStorage.getItem(LB_KEY))||[];}catch{return[];}
+}
+function saveScore(name,score,correct){
+  const lb=getLeaderboard();
+  const ex=lb.findIndex(e=>e.name.toLowerCase()===name.toLowerCase());
+  const entry={name,score,correct,date:Date.now()};
+  if(ex>=0){if(score>lb[ex].score)lb[ex]=entry;}
+  else lb.push(entry);
+  lb.sort((a,b)=>b.score-a.score);
+  localStorage.setItem(LB_KEY,JSON.stringify(lb.slice(0,20)));
+  return lb;
+}
+
+// ── QUESTIONS ──────────────────────────────────────────────────────────────
+const Qs=[
+  {
+    type:"LECTURA",
+    q:"¿Cuál es el bin modal (mayor frecuencia) en este histograma?",
+    hist:{vals:[4,8,13,20,15,9,5,2],labels:["40–45","45–50","50–55","55–60","60–65","65–70","70–75","75–80"],color:"#00C9B1"},
+    opts:["40–45 (f=4)","50–55 (f=13)","55–60 (f=20) ✓","65–70 (f=9)"],correct:2,
+    fb:"✅ ¡Correcto! El bin 55–60 tiene la frecuencia más alta (f=20). Se llama clase modal."
+  },
+  {
+    type:"CONCEPTO",
+    q:"¿Qué fórmula usamos para calcular el número óptimo de bins (k)?",
+    hist:null,
+    opts:["A = (máx − mín) / k","k = 1 + 3.322 × log₁₀(n) ✓","f_r = f_i / n","σ = √(Σ(xᵢ−x̄)²/n)"],correct:1,
+    fb:"✅ ¡Exacto! Regla de Sturges: k = 1 + 3.322 × log₁₀(n). Para n=100 → k≈8 bins."
+  },
+  {
+    type:"FORMA",
+    q:"Este histograma tiene cola larga a la derecha y el pico a la izquierda. ¿Qué distribución es?",
+    hist:{vals:[18,13,9,6,4,3,2,1],labels:["1","2","3","4","5","6","7","8"],color:"#F5A623"},
+    opts:["Distribución simétrica","Sesgo negativo (−)","Bimodal","Sesgo positivo (+) ✓"],correct:3,
+    fb:"✅ Cola hacia la derecha = sesgo positivo (+). Media > Mediana. Ej: salarios, tiempos de falla."
+  },
+  {
+    type:"DIFERENCIA",
+    q:"¿Cuál es la diferencia VISUAL más importante entre histograma y diagrama de barras?",
+    hist:null,
+    opts:["El color de las barras","El título del gráfico","Las barras van contiguas (sin espacio) ✓","El eje Y siempre empieza en cero"],correct:2,
+    fb:"✅ En el histograma las barras son contiguas porque la variable es continua. Con espacio = diagrama de barras."
+  },
+  {
+    type:"CÁLCULO",
+    q:"Tienes 200 datos con mínimo 10 y máximo 90. Con Sturges, ¿cuántos bins y qué amplitud?",
+    hist:null,
+    opts:["k=5, A=16","k=8, A=10 ✓","k=10, A=8","k=15, A=5.3"],correct:1,
+    fb:"✅ k = 1+3.322×log₁₀(200) ≈ 8 bins. A = (90−10)/8 = 10 unidades por bin."
+  },
+  {
+    type:"LECTURA",
+    q:"Este histograma tiene DOS picos claramente separados. ¿Qué indica?",
+    hist:{vals:[3,9,16,7,2,7,17,9,3],labels:["A","B","C","D","E","F","G","H","I"],color:"#8B5CF6"},
+    opts:["Sesgo positivo","Errores de medición","Dos subpoblaciones mezcladas ✓","Bins demasiado grandes"],correct:2,
+    fb:"✅ Distribución bimodal = dos grupos mezclados. Ej: tallas de ropa de hombres + mujeres juntas."
+  },
+  {
+    type:"ERROR COMÚN",
+    q:"Un estudiante usa 3 bins para analizar 500 datos de temperatura. ¿Cuál es el problema?",
+    hist:{vals:[120,230,150],labels:["Frío","Temp.","Caliente"],color:"#E03148"},
+    opts:["El color no es adecuado","Pierde toda la variación y detalle ✓","Debería usar gráfico de líneas","Tiene demasiados datos"],correct:1,
+    fb:"✅ Con solo 3 bins para 500 datos todo queda mezclado. Sturges sugiere k≈10 → mucho más informativo."
+  },
+  {
+    type:"APLICACIÓN",
+    q:"¿En cuál de estos casos usarías un HISTOGRAMA (no un diagrama de barras)?",
+    hist:null,
+    opts:["Ventas por país","Distribución de tiempos de entrega en días ✓","Colores favoritos del producto","Empleados por departamento"],correct:1,
+    fb:"✅ Tiempos de entrega = variable numérica continua → histograma. Los demás son categorías → barras."
+  }
+];
+
+// ── GAME STATE ─────────────────────────────────────────────────────────────
+let G={name:'',q:0,score:0,streak:0,correct:0,timerInt:null,timeLeft:20,answered:false};
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── START ──────────────────────────────────────────────────────────────────
+function startGame(){
+  G.name=document.getElementById('name-input').value.trim();
+  if(G.name.length<2)return;
+  G={...G,q:0,score:0,streak:0,correct:0,timerInt:null,timeLeft:20,answered:false};
+  document.getElementById('top-bar').classList.add('show');
+  document.getElementById('score-top-val').textContent='0';
+  showScreen('s-question');
+  renderQ();
+}
+
+// ── RENDER QUESTION ────────────────────────────────────────────────────────
+function renderQ(){
+  clearInterval(G.timerInt);
+  G.answered=false;G.timeLeft=20;
+  const q=Qs[G.q];
+  document.getElementById('prog-fill').style.width=(G.q/Qs.length*100)+'%';
+  document.getElementById('timer-num').className='timer-badge';
+
+  let html=`
+    <div class="q-eyebrow">
+      <div class="q-num">${String(G.q+1).padStart(2,'0')}</div>
+      <div><div class="q-of">DE ${Qs.length} — ${G.name}</div><div class="q-badge">${q.type}</div></div>
+    </div>
+    <div class="q-text">${q.q}</div>`;
+
+  if(q.hist){
+    const mx=Math.max(...q.hist.vals);
+    html+=`<div class="hist-wrap">
+      <div class="hbars">${q.hist.vals.map((v,i)=>`
+        <div class="hb" style="height:${(v/mx)*80}px;background:${q.hist.color}44;border:1px solid ${q.hist.color};border-bottom:none">
+          <span style="color:${q.hist.color}">${v}</span>
+        </div>`).join('')}
+      </div>
+      <div class="hlabels">${q.hist.labels.map(l=>`<span>${l}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  html+=`<div class="opts">${q.opts.map((o,i)=>`
+    <button class="opt" id="opt${i}" onclick="answer(${i})">
+      <div class="opt-letter">${['A','B','C','D'][i]}</div>
+      ${o.replace(' ✓','')}
+    </button>`).join('')}
+  </div>
+  <div class="feedback" id="fb"></div>
+  <button class="next-btn" id="nbtn" onclick="nextQ()">
+    ${G.q<Qs.length-1?'SIGUIENTE →':'VER RESULTADOS →'}
+  </button>`;
+
+  document.getElementById('s-question').innerHTML=html;
+  // scroll top
+  document.getElementById('s-question').scrollTo(0,0);
+  window.scrollTo(0,0);
+  startTimer();
+}
+
+// ── TIMER ──────────────────────────────────────────────────────────────────
+function startTimer(){
+  const el=document.getElementById('timer-num');
+  G.timerInt=setInterval(()=>{
+    G.timeLeft--;
+    el.textContent=G.timeLeft;
+    if(G.timeLeft<=7)el.classList.add('danger');
+    if(G.timeLeft<=0){clearInterval(G.timerInt);if(!G.answered)timeOut();}
+  },1000);
+}
+function timeOut(){
+  G.answered=true;G.streak=0;
+  const q=Qs[G.q];
+  document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  document.getElementById(`opt${q.correct}`).classList.add('correct');
+  const fb=document.getElementById('fb');
+  fb.className='feedback show bad';
+  fb.textContent=`⏱ ¡Tiempo! Respuesta: ${['A','B','C','D'][q.correct]}. ${q.fb.replace('✅ ','')}`;
+  document.getElementById('nbtn').classList.add('show');
+}
+
+// ── ANSWER ─────────────────────────────────────────────────────────────────
+function answer(idx){
+  if(G.answered)return;
+  G.answered=true;
+  clearInterval(G.timerInt);
+  const q=Qs[G.q];
+  const ok=idx===q.correct;
+  document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  document.getElementById(`opt${idx}`).classList.add(ok?'correct':'wrong');
+  if(!ok)document.getElementById(`opt${q.correct}`).classList.add('correct');
+  const fb=document.getElementById('fb');
+  fb.className='feedback show '+(ok?'ok':'bad');
+  if(ok){
+    G.correct++;G.streak++;
+    const bonus=G.streak>1?(G.streak-1)*25:0;
+    const pts=100+Math.round(G.timeLeft/20*60)+bonus;
+    G.score+=pts;
+    document.getElementById('score-top-val').textContent=G.score;
+    showPts(pts,bonus);
+    if(G.streak>=3)showStreak();
+    fb.textContent=q.fb+(bonus>0?` 🔥 Bonus racha: +${bonus}pts`:'');
+  }else{
+    G.streak=0;
+    fb.textContent='❌ '+q.fb.replace('✅ ','');
+  }
+  document.getElementById('nbtn').classList.add('show');
+}
+
+function nextQ(){
+  G.q++;
+  if(G.q>=Qs.length)showResult();
+  else renderQ();
+}
+
+// ── RESULT ─────────────────────────────────────────────────────────────────
+function showResult(){
+  clearInterval(G.timerInt);
+  document.getElementById('top-bar').classList.remove('show');
+  document.getElementById('prog-fill').style.width='100%';
+
+  const lb=saveScore(G.name,G.score,G.correct);
+  const pct=Math.round(G.correct/Qs.length*100);
+  const myRank=lb.findIndex(e=>e.name.toLowerCase()===G.name.toLowerCase())+1;
+  const verdict=pct>=87?['🏆 EXPERTO EN HISTOGRAMAS','var(--gold)']:
+                pct>=62?['👍 MUY BUEN TRABAJO','var(--teal)']:
+                        ['📈 SIGUE PRACTICANDO','var(--violet)'];
+
+  const topN=lb.slice(0,8);
+  const maxPts=topN[0]?.score||1;
+  const rankColors=['gold-r','silver-r','bronze-r'];
+  const rankEmojis=['🥇','🥈','🥉'];
+
+  let lbHtml=topN.map((e,i)=>{
+    const isMe=e.name.toLowerCase()===G.name.toLowerCase();
+    const rankClass=rankColors[i]||'';
+    const rankLabel=rankEmojis[i]||(i+1);
+    return `<div class="lb-row${isMe?' me':''}">
+      <div class="lb-rank ${rankClass}">${rankLabel}</div>
+      <div class="lb-name">${e.name}${isMe?' 👈':''}</div>
+      <div class="lb-bar-wrap"><div class="lb-bar" style="width:${e.score/maxPts*100}%"></div></div>
+      <div class="lb-pts">${e.score}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('s-result').innerHTML=`
+    <div class="result-name">🎓 ${G.name} — Puesto #${myRank}</div>
+    <div class="result-score">${G.score}</div>
+    <div class="result-max">de 1160 puntos máximos</div>
+    <div class="result-verdict" style="color:${verdict[1]}">${verdict[0]}</div>
+    <div class="result-stats">
+      <div class="rstat"><div class="rn" style="color:var(--mint)">${G.correct}/${Qs.length}</div><div class="rl">CORRECTAS</div></div>
+      <div class="rstat"><div class="rn" style="color:var(--gold)">${G.score}</div><div class="rl">PUNTOS</div></div>
+      <div class="rstat"><div class="rn" style="color:var(--red)">${pct}%</div><div class="rl">PRECISIÓN</div></div>
+    </div>
+    <div class="lb-section">
+      <div class="lb-title">🏆 TABLA DE LÍDERES — TODOS LOS JUGADORES</div>
+      ${lbHtml}
+    </div>
+    <button class="replay-btn" onclick="replay()">↺ JUGAR DE NUEVO</button>
+  `;
+
+  showScreen('s-result');
+  if(pct>=62)confetti();
+
+  // Show winner overlay if #1
+  if(myRank===1){
+    setTimeout(()=>{
+      document.getElementById('winner-name').textContent=G.name;
+      document.getElementById('winner-pts').textContent=G.score+' puntos';
+      document.getElementById('winner-screen').classList.add('show');
+      confetti();confetti();
+    },800);
+  }
+}
+
+function replay(){
+  document.getElementById('name-input').value='';
+  document.getElementById('start-btn').disabled=true;
+  showScreen('s-lobby');
+}
+
+// ── EFFECTS ────────────────────────────────────────────────────────────────
+function showPts(pts,bonus){
+  const el=document.createElement('div');
+  el.className='pts-pop';
+  el.textContent='+'+pts+(bonus?' 🔥':'');
+  el.style.cssText=`top:${120+Math.random()*120}px;left:${30+Math.random()*50}%`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1200);
+}
+function showStreak(){
+  const el=document.getElementById('streak-pop');
+  el.textContent=`🔥 ×${G.streak} RACHA!`;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),1100);
+}
+function confetti(){
+  const colors=['#E03148','#F5A623','#00C9B1','#8B5CF6','#10D98A','#3B82F6'];
+  for(let i=0;i<60;i++){
+    const p=document.createElement('div');p.className='piece';
+    const c=colors[~~(Math.random()*colors.length)];
+    const dur=2+Math.random()*2;
+    p.style.cssText=`left:${Math.random()*100}%;width:${5+Math.random()*8}px;height:${5+Math.random()*8}px;background:${c};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${dur}s;animation-delay:${Math.random()*.8}s`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),(dur+1.5)*1000);
+  }
+}
+</script>
+</body>
+</html>
